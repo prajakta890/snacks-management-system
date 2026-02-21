@@ -6,9 +6,20 @@ $pageTitle = 'Daily Reports';
 $pageSubtitle = 'Sales analytics and revenue summary';
 $activePage = 'reports';
 
-$date = sanitize($_GET['date'] ?? date('Y-m-d'));
+$startDate = sanitize($_GET['start'] ?? date('Y-m-d'));
+$endDate = sanitize($_GET['end'] ?? date('Y-m-d'));
 
-// Today's summary
+// For UI labeling
+if ($startDate === $endDate) {
+    if ($startDate === date('Y-m-d')) $dateLabel = "Today";
+    else $dateLabel = date('d M Y', strtotime($startDate));
+} else {
+    $dateLabel = date('d M Y', strtotime($startDate)) . " - " . date('d M Y', strtotime($endDate));
+}
+
+$isMultiDay = ($startDate !== $endDate);
+
+// Summary
 $summary = db()->fetchOne("
     SELECT
         COUNT(*) as total_bills,
@@ -16,16 +27,36 @@ $summary = db()->fetchOne("
         COALESCE(SUM(CASE WHEN payment_status='paid' THEN 1 ELSE 0 END),0) as paid_count,
         COALESCE(SUM(CASE WHEN payment_status IN('initiated','pending') THEN 1 ELSE 0 END),0) as pending_count,
         COALESCE(SUM(CASE WHEN payment_status IN('initiated','pending') THEN total_amount ELSE 0 END),0) as pending_amount
-    FROM bills WHERE DATE(created_at)=?", [$date]);
+    FROM bills WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?", [$startDate, $endDate]);
 
-// Hourly revenue for chart
-$hourly = db()->fetchAll("
-    SELECT HOUR(created_at) as hr, COALESCE(SUM(total_amount),0) as total
-    FROM bills WHERE DATE(created_at)=? AND payment_status='paid'
-    GROUP BY HOUR(created_at) ORDER BY hr", [$date]);
+// Chart Data (Hourly if 1 day, Daily if multi-day)
+$chartData = [];
+$chartLabels = [];
+$chartTitle = "Revenue Trend";
 
-$hourlyData = array_fill(0, 24, 0);
-foreach ($hourly as $h) { $hourlyData[$h['hr']] = floatval($h['total']); }
+if (!$isMultiDay) {
+    $chartTitle = "Hourly Revenue — " . $dateLabel;
+    $hourly = db()->fetchAll("
+        SELECT HOUR(created_at) as hr, COALESCE(SUM(total_amount),0) as total
+        FROM bills WHERE DATE(created_at)=? AND payment_status='paid'
+        GROUP BY HOUR(created_at) ORDER BY hr", [$startDate]);
+    $hourlyMap = array_fill(0, 24, 0);
+    foreach ($hourly as $h) { $hourlyMap[$h['hr']] = floatval($h['total']); }
+    $chartData = array_values($hourlyMap);
+    for($i=0; $i<24; $i++) {
+        $chartLabels[] = $i===0?'12am':($i<12?$i.'am':($i===12?'12pm':($i-12).'pm'));
+    }
+} else {
+    $chartTitle = "Daily Revenue Trend";
+    $daily = db()->fetchAll("
+        SELECT DATE(created_at) as dt, COALESCE(SUM(total_amount),0) as total
+        FROM bills WHERE DATE(created_at) >= ? AND DATE(created_at) <= ? AND payment_status='paid'
+        GROUP BY DATE(created_at) ORDER BY dt", [$startDate, $endDate]);
+    foreach ($daily as $d) {
+        $chartLabels[] = date('d M', strtotime($d['dt']));
+        $chartData[] = floatval($d['total']);
+    }
+}
 
 // Category revenue
 $catRevenue = db()->fetchAll("
@@ -35,8 +66,8 @@ $catRevenue = db()->fetchAll("
     JOIN menu_categories mc ON mi.category_id=mc.id
     JOIN orders o ON oi.order_id=o.id
     JOIN bills b ON b.order_id=o.id
-    WHERE DATE(b.created_at)=? AND b.payment_status='paid'
-    GROUP BY mc.id ORDER BY total DESC", [$date]);
+    WHERE DATE(b.created_at) >= ? AND DATE(b.created_at) <= ? AND b.payment_status='paid'
+    GROUP BY mc.id ORDER BY total DESC", [$startDate, $endDate]);
 
 // Top Items
 $topItems = db()->fetchAll("
@@ -45,8 +76,8 @@ $topItems = db()->fetchAll("
     JOIN menu_items mi ON oi.menu_item_id=mi.id
     JOIN orders o ON oi.order_id=o.id
     JOIN bills b ON b.order_id=o.id
-    WHERE DATE(b.created_at)=? AND b.payment_status='paid'
-    GROUP BY mi.id ORDER BY qty DESC LIMIT 10", [$date]);
+    WHERE DATE(b.created_at) >= ? AND DATE(b.created_at) <= ? AND b.payment_status='paid'
+    GROUP BY mi.id ORDER BY qty DESC LIMIT 10", [$startDate, $endDate]);
 
 // Last 7 days
 $weekly = db()->fetchAll("
@@ -58,13 +89,29 @@ include __DIR__ . '/partials/header.php';
 ?>
 
 <!-- Date Selector -->
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-    <div class="form-group" style="margin:0;display:flex;align-items:center;gap:10px">
-        <label style="color:var(--text-muted);font-size:13px;white-space:nowrap">Report Date:</label>
-        <input type="date" class="form-control" id="reportDate" value="<?= $date ?>" max="<?= date('Y-m-d') ?>" style="width:180px" onchange="window.location.href='reports.php?date='+this.value">
+<div class="card" style="margin-bottom:20px; padding:15px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="color:var(--text-muted);font-size:13px;font-weight:600">Preset Filters:</label>
+        <a href="reports.php?start=<?= date('Y-m-d') ?>&end=<?= date('Y-m-d') ?>" class="topbar-btn <?= ($startDate==date('Y-m-d') && $endDate==date('Y-m-d'))?'btn-primary':'btn-secondary' ?> btn-sm">Today</a>
+        
+        <a href="reports.php?start=<?= date('Y-m-01') ?>&end=<?= date('Y-m-t') ?>" class="topbar-btn <?= ($startDate==date('Y-m-01') && $endDate==date('Y-m-t'))?'btn-primary':'btn-secondary' ?> btn-sm">This Month</a>
+        
+        <a href="reports.php?start=<?= date('Y-m-d', strtotime('-3 months')) ?>&end=<?= date('Y-m-d') ?>" class="topbar-btn <?= ($startDate==date('Y-m-d', strtotime('-3 months')) && $endDate==date('Y-m-d'))?'btn-primary':'btn-secondary' ?> btn-sm">Last 3 Months</a>
+        
+        <a href="reports.php?start=<?= date('Y-m-d', strtotime('-6 months')) ?>&end=<?= date('Y-m-d') ?>" class="topbar-btn <?= ($startDate==date('Y-m-d', strtotime('-6 months')) && $endDate==date('Y-m-d'))?'btn-primary':'btn-secondary' ?> btn-sm">Last 6 Months</a>
+        
+        <a href="reports.php?start=<?= date('Y-m-d', strtotime('-1 year')) ?>&end=<?= date('Y-m-d') ?>" class="topbar-btn <?= ($startDate==date('Y-m-d', strtotime('-1 year')) && $endDate==date('Y-m-d'))?'btn-primary':'btn-secondary' ?> btn-sm">Last 1 Year</a>
+        
+        <button class="topbar-btn btn-success btn-sm" style="margin-left:auto" onclick="window.print()"><i class="fa fa-print"></i> Print Report</button>
     </div>
-    <button class="topbar-btn btn-secondary btn-sm" onclick="window.print()"><i class="fa fa-print"></i> Print Report</button>
-    <a href="reports.php?date=<?= date('Y-m-d') ?>" class="topbar-btn btn-secondary btn-sm">Today</a>
+    <hr style="border-color:var(--border);margin:15px 0">
+    <form method="GET" action="reports.php" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="color:var(--text-muted);font-size:13px;white-space:nowrap;font-weight:600">Custom Range:</label>
+        <input type="date" name="start" class="form-control" value="<?= $startDate ?>" max="<?= date('Y-m-d') ?>" style="width:140px;height:32px;font-size:12px">
+        <span style="color:var(--text-muted)">to</span>
+        <input type="date" name="end" class="form-control" value="<?= $endDate ?>" max="<?= date('Y-m-d') ?>" style="width:140px;height:32px;font-size:12px">
+        <button type="submit" class="topbar-btn btn-primary btn-sm"><i class="fa fa-search"></i> Apply</button>
+    </form>
 </div>
 
 <!-- Summary Cards -->
@@ -73,7 +120,7 @@ include __DIR__ . '/partials/header.php';
         <div class="stat-icon green"><i class="fa fa-indian-rupee-sign"></i></div>
         <div class="stat-info">
             <h3><?= formatCurrency($summary['revenue']) ?></h3>
-            <p>Today's Revenue</p>
+            <p><?= $dateLabel ?> Revenue</p>
         </div>
     </div>
     <div class="stat-card">
@@ -107,10 +154,10 @@ include __DIR__ . '/partials/header.php';
 </div>
 
 <div class="row">
-    <!-- Hourly Chart -->
+    <!-- Revenue Trend Chart -->
     <div class="col" style="flex:2">
         <div class="card">
-            <div class="card-header"><h2>Hourly Revenue — <?= date('d M Y', strtotime($date)) ?></h2></div>
+            <div class="card-header"><h2><?= $chartTitle ?></h2></div>
             <div class="card-body"><canvas id="hourlyChart" height="200"></canvas></div>
         </div>
     </div>
@@ -177,15 +224,15 @@ include __DIR__ . '/partials/header.php';
 Chart.defaults.color = 'rgba(255,255,255,0.5)';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
 
-// Hourly Chart
+// Hourly/Daily Revenue Chart
 const hourlyCtx = document.getElementById('hourlyChart');
 new Chart(hourlyCtx, {
     type: 'bar',
     data: {
-        labels: Array.from({length:24}, (_,i) => i===0?'12am': i<12?i+'am': i===12?'12pm':(i-12)+'pm'),
+        labels: <?= json_encode($chartLabels) ?>,
         datasets: [{
             label: 'Revenue (₹)',
-            data: <?= json_encode(array_values($hourlyData)) ?>,
+            data: <?= json_encode($chartData) ?>,
             backgroundColor: 'rgba(108,92,231,0.6)',
             borderColor: 'rgba(108,92,231,1)',
             borderWidth: 2,
