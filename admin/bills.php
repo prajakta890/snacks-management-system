@@ -29,7 +29,7 @@ $bills = db()->fetchAll($sql, $params);
 $viewBill = null;
 if (isset($_GET['bill'])) {
     $viewBill = db()->fetchOne(
-        "SELECT b.*, t.table_number, o.order_number FROM bills b JOIN tables t ON b.table_id=t.id JOIN orders o ON b.order_id=o.id WHERE b.bill_number=?",
+        "SELECT b.*, t.table_number, o.order_number, o.status as order_status FROM bills b JOIN tables t ON b.table_id=t.id JOIN orders o ON b.order_id=o.id WHERE b.bill_number=?",
         [sanitize($_GET['bill'])]
     );
 }
@@ -105,6 +105,14 @@ include __DIR__ . '/partials/header.php';
                     <select class="form-control" id="edit_status">
                         <?php foreach(['initiated','pending','paid','cancelled'] as $s): ?>
                         <option value="<?= $s ?>" <?= $viewBill['payment_status']===$s?'selected':'' ?>><?= ucfirst($s) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Order Status</label>
+                    <select class="form-control" id="edit_order_status">
+                        <?php foreach(['placed','preparing','served','cancelled'] as $s): ?>
+                        <option value="<?= $s ?>" <?= ($viewBill['order_status'] ?? 'placed')===$s?'selected':'' ?>><?= ucfirst($s) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -191,7 +199,6 @@ include __DIR__ . '/partials/header.php';
 </div>
 
 <script>
-const BASE_URL = '<?= BASE_URL ?>';
 function searchBills() {
     const params = new URLSearchParams({
         name: document.getElementById('f_name').value,
@@ -218,6 +225,7 @@ function saveBillEdit(billNum) {
             customer_mobile: document.getElementById('edit_mobile').value,
             payment_status: document.getElementById('edit_status').value,
             payment_method: document.getElementById('edit_method').value,
+            order_status: document.getElementById('edit_order_status').value,
             action: 'update'
         })
     }).then(r=>r.json()).then(d=>{

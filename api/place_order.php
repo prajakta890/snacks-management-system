@@ -7,6 +7,10 @@ $tableId = (int)($_POST['table_id'] ?? 0);
 $items = json_decode($_POST['items'] ?? '[]', true);
 $customerName = sanitize($_POST['customer_name'] ?? '');
 $customerMobile = sanitize($_POST['customer_mobile'] ?? '');
+if (empty($customerName) && empty($customerMobile)) {
+    $customerName = 'Chandrakant';
+    $customerMobile = '9860444609';
+}
 $notes = sanitize($_POST['notes'] ?? '');
 
 if (!$tableId) { jsonError('Invalid table'); }
@@ -48,17 +52,16 @@ try {
         // Add items to existing order
         $orderId = $existingOrder['id'];
         foreach ($orderItems as $oi) {
-            // Check if item already exists
-            $existing = db()->fetchOne("SELECT * FROM order_items WHERE order_id=? AND menu_item_id=? AND status='pending'", [$orderId, $oi['menu_item_id']]);
+            $existing = db()->fetchOne("SELECT * FROM order_items WHERE order_id=? AND menu_item_id=? AND status != 'cancelled'", [$orderId, $oi['menu_item_id']]);
             if ($existing) {
                 db()->execute("UPDATE order_items SET quantity=quantity+?, subtotal=subtotal+? WHERE id=?", [$oi['qty'], $oi['total'], $existing['id']]);
             } else {
-                db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal) VALUES(?,?,?,?,?,?)",
-                    [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total']]);
+                db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal,status) VALUES(?,?,?,?,?,?,?)",
+                    [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'served']);
             }
         }
-        // Recalculate order total
-        $newSub = db()->fetchOne("SELECT COALESCE(SUM(subtotal),0) as total FROM order_items WHERE order_id=?", [$orderId])['total'];
+        // Recalculate order total ignoring cancelled items
+        $newSub = db()->fetchOne("SELECT COALESCE(SUM(subtotal),0) as total FROM order_items WHERE order_id=? AND status != 'cancelled'", [$orderId])['total'];
         $newTax = round($newSub * TAX_PERCENT / 100, 2);
         $newTotal = $newSub + $newTax;
         db()->execute("UPDATE orders SET subtotal=?, tax=?, total=? WHERE id=?", [$newSub, $newTax, $newTotal, $orderId]);
@@ -68,11 +71,11 @@ try {
         // Create new order
         $orderNumber = generateOrderNumber();
         $orderId = db()->insert("INSERT INTO orders (table_id,order_number,customer_name,customer_mobile,status,subtotal,tax,total,notes) VALUES(?,?,?,?,?,?,?,?,?)",
-            [$tableId, $orderNumber, $customerName, $customerMobile, 'placed', $subtotal, $taxAmount, $totalAmount, $notes]);
+            [$tableId, $orderNumber, $customerName, $customerMobile, 'served', $subtotal, $taxAmount, $totalAmount, $notes]);
 
         foreach ($orderItems as $oi) {
-            db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal) VALUES(?,?,?,?,?,?)",
-                [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total']]);
+            db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal,status) VALUES(?,?,?,?,?,?,?)",
+                [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'served']);
         }
 
         // Create bill

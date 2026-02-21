@@ -34,6 +34,7 @@ if ($action === 'create') {
     $customerMobile = sanitize($_POST['customer_mobile'] ?? '');
     $paymentStatus = sanitize($_POST['payment_status'] ?? '');
     $paymentMethod = sanitize($_POST['payment_method'] ?? 'cash');
+    $orderStatus = sanitize($_POST['order_status'] ?? '');
 
     $updates = [];
     $params = [];
@@ -54,6 +55,20 @@ if ($action === 'create') {
             $exists = db()->fetchOne("SELECT id FROM payments WHERE bill_id=?", [$bill['id']]);
             if (!$exists) {
                 db()->insert("INSERT INTO payments (bill_id,amount,payment_method) VALUES(?,?,?)", [$bill['id'], $bill['total_amount'], $paymentMethod]);
+            }
+        }
+    }
+
+    if ($orderStatus) {
+        $billData = db()->fetchOne("SELECT order_id FROM bills WHERE bill_number=?", [$billNumber]);
+        if ($billData) {
+            db()->execute("UPDATE orders SET status=? WHERE id=?", [$orderStatus, $billData['order_id']]);
+            if ($orderStatus === 'cancelled') {
+                db()->execute("UPDATE order_items SET status='cancelled' WHERE order_id=? AND status='pending'", [$billData['order_id']]);
+                // Zero out bill values since it's fully cancelled
+                $newSub = 0; $newTax = 0; $newTotal = 0;
+                db()->execute("UPDATE orders SET subtotal=?, tax=?, total=? WHERE id=?", [$newSub, $newTax, $newTotal, $billData['order_id']]);
+                db()->execute("UPDATE bills SET subtotal=?, tax_amount=?, total_amount=? WHERE order_id=?", [$newSub, $newTax, $newTotal, $billData['order_id']]);
             }
         }
     }

@@ -34,6 +34,7 @@ foreach ($menuItems as $item) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/customer.css">
+    <script>var BASE_URL = '<?= BASE_URL ?>';</script>
 </head>
 <body>
 
@@ -156,7 +157,6 @@ foreach ($menuItems as $item) {
 <script>
 const TABLE_ID = <?= $tableId ?>;
 const TAX_RATE = <?= TAX_PERCENT ?>;
-var BASE_URL = '<?= BASE_URL ?>';
 let cart = JSON.parse(sessionStorage.getItem('cart_' + TABLE_ID) || '{}');
 
 // ---- CART FUNCTIONS ----

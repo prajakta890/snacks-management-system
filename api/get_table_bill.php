@@ -63,6 +63,9 @@ foreach ($items as $item) {
                 onchange='updateItemStatus($itemId, this.value)'>
                 $statusSel
             </select>
+            <button class='topbar-btn btn-danger' style='padding: 4px 8px; border-radius: 4px; display:inline-flex' onclick='deleteOrderItem($itemId, \"{$bill['bill_number']}\")' title='Delete Item'>
+                <i class='fa fa-trash'></i>
+            </button>
         </td>
     </tr>";
 }

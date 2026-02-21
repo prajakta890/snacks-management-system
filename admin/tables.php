@@ -128,7 +128,6 @@ foreach ($tables as $t):
 </div>
 
 <script>
-const BASE_URL = '<?= BASE_URL ?>';
 let autoRefreshTimer = null;
 
 function openAddTableModal() {
