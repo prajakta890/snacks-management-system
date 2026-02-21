@@ -44,11 +44,9 @@ function updateItemStatus(itemId, status) {
         .then(d => {
             showToast(d.success ? 'Status updated' : 'Error', d.success ? 'success' : 'error');
             if (d.success) {
-                const activeTableBtn = document.querySelector('.table-card:active');
-                if (typeof openTableBill === 'function') {
-                    // Slight hack to force reload by fetching again if modal is open
-                    // Usually you'd extract the table ID from dom or pass it.
-                    // For now, reload the page quickly
+                if (typeof openTableBill === 'function' && typeof currentTableId !== 'undefined' && currentTableId) {
+                    setTimeout(() => openTableBill(currentTableId, currentTableNum, currentFloor), 300);
+                } else {
                     setTimeout(() => location.reload(), 800);
                 }
             }
@@ -67,7 +65,13 @@ function deleteOrderItem(itemId, billNumber) {
         .then(r => r.json())
         .then(d => {
             showToast(d.success ? 'Item deleted' : 'Error', d.success ? 'success' : 'error');
-            if (d.success) setTimeout(() => location.reload(), 800);
+            if (d.success) {
+                if (typeof openTableBill === 'function' && typeof currentTableId !== 'undefined' && currentTableId) {
+                    setTimeout(() => openTableBill(currentTableId, currentTableNum, currentFloor), 300);
+                } else {
+                    setTimeout(() => location.reload(), 800);
+                }
+            }
         })
         .catch(() => showToast('Network error', 'error'));
 }

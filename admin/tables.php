@@ -129,6 +129,9 @@ foreach ($tables as $t):
 
 <script>
 let autoRefreshTimer = null;
+let currentTableId = null;
+let currentTableNum = null;
+let currentFloor = null;
 
 function openAddTableModal() {
     document.getElementById('addTableModal').classList.add('active');
@@ -146,6 +149,9 @@ function submitAddTable() {
 }
 
 function openTableBill(tableId, tableNum, floor) {
+    currentTableId = tableId;
+    currentTableNum = tableNum;
+    currentFloor = floor;
     document.getElementById('billModal').classList.add('active');
     document.getElementById('billModalTitle').textContent = '🪑 ' + tableNum + ' — ' + floor;
     document.getElementById('billModalBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Loading...</div>';
