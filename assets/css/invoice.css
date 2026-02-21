@@ -1,0 +1,235 @@
+/* ============================================================
+   Invoice / Print Bill CSS
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0d0d1a;
+    color: #333;
+}
+
+/* Hide on print */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: #fff !important;
+    }
+
+    .invoice-wrapper {
+        padding: 0;
+    }
+
+    .invoice {
+        box-shadow: none;
+        border: none;
+    }
+}
+
+.invoice-wrapper {
+    max-width: 720px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.invoice {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+.invoice-header {
+    background: linear-gradient(135deg, #0f0c29, #302b63);
+    color: #fff;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.biz-logo {
+    font-size: 52px;
+}
+
+.biz-info h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.biz-info p {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-top: 3px;
+}
+
+/* Bill Meta */
+.bill-meta {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 30px;
+    background: #f8f8ff;
+    border-bottom: 1px solid #e8e8ff;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.meta-row {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+    align-items: center;
+}
+
+.meta-row strong {
+    color: #555;
+    min-width: 70px;
+}
+
+.meta-row span {
+    color: #222;
+    font-weight: 600;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-initiated {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Customer Block */
+.customer-block {
+    padding: 12px 30px;
+    font-size: 13px;
+    background: #f0f0ff;
+    border-bottom: 1px solid #e0e0ff;
+    color: #333;
+}
+
+/* Items Table */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.items-table thead tr {
+    background: linear-gradient(to right, #6c5ce7, #a29bfe);
+    color: #fff;
+}
+
+.items-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.items-table th:last-child,
+.items-table td:last-child {
+    text-align: right;
+}
+
+.items-table th:nth-child(2),
+.items-table td:nth-child(2) {
+    width: 40%;
+}
+
+.items-table td {
+    padding: 11px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0f8;
+    color: #444;
+}
+
+.items-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.items-table tbody tr:nth-child(even) {
+    background: #fafaff;
+}
+
+/* Totals */
+.totals-block {
+    padding: 16px 30px 20px;
+    background: #f8f8ff;
+    border-top: 2px dashed #e0e0f0;
+}
+
+.total-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 5px 0;
+    color: #555;
+}
+
+.total-line.grand {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a1a3e;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 2px solid #d0d0ee;
+}
+
+.payment-method {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #888;
+    text-align: right;
+}
+
+/* Footer */
+.invoice-footer {
+    background: linear-gradient(135deg, #0f0c29, #302b63);
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin: 12px 0;
+}
