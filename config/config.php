@@ -3,13 +3,13 @@
 // SNACS SHOP - App Configuration
 // ============================================================
 
-define('APP_NAME', 'SNACS SHOP');
-define('APP_TAGLINE', 'Hotel & Snacks Center');
+define('APP_NAME', 'कन्हैया स्नॅक्स');
+define('APP_TAGLINE', 'कन्हैया स्नॅक्स');
 define('APP_VERSION', '1.0.0');
 define('BASE_URL', 'http://localhost/snacks-management-system');
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');
 define('UPLOAD_URL', BASE_URL . '/uploads/');
-define('TAX_PERCENT', 5); // GST 5%
+define('TAX_PERCENT', 0); // GST 5%
 define('CURRENCY', '₹');
 define('DEFAULT_MENU_IMAGE', BASE_URL . '/assets/images/default-food.png');
 

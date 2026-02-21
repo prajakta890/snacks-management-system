@@ -35,8 +35,8 @@ $items = db()->fetchAll("SELECT * FROM order_items WHERE order_id=?", [$bill['or
             <div class="biz-info">
                 <h1><?= APP_NAME ?></h1>
                 <p><?= APP_TAGLINE ?></p>
-                <p>📍 Your Hotel Address, City — 000000</p>
-                <p>📞 +91 98765 43210</p>
+                <p>📍 विठ्ठल टॉवर, बीड रोड, जामखेड</p>
+                <p>📞 +91 70288 93232</p>
             </div>
         </div>
 
