@@ -22,6 +22,9 @@ if (!$bill) {
         <div class="empty-icon">🪑</div>
         <h3>No Active Bill</h3>
         <p>No pending bill for this table.</p>
+        <div style="margin-top: 20px;">
+            <a href="'.BASE_URL.'/admin/pos.php?table_id='.$tableId.'" class="topbar-btn btn-primary"><i class="fa fa-plus"></i> Add Order</a>
+        </div>
     </div>';
 } else {
     $items = db()->fetchAll("SELECT oi.* FROM order_items oi WHERE oi.order_id=?", [$bill['order_id']]);
@@ -103,6 +106,7 @@ foreach ($items as $item) {
     <div style='display:flex;gap:8px;margin-top:16px;flex-wrap:wrap'>
         <button class='topbar-btn btn-primary' onclick='saveBillFromModal(\"{$bill['bill_number']}\")' style='flex:1'><i class='fa fa-floppy-disk'></i> Save Bill</button>
         <a href='".BASE_URL."/admin/print_bill.php?bill={$bill['bill_number']}' target='_blank' class='topbar-btn btn-secondary'><i class='fa fa-print'></i> Print</a>
+        <a href='".BASE_URL."/admin/pos.php?table_id={$tableId}' class='topbar-btn btn-warning'><i class='fa fa-plus'></i> Add Items</a>
     </div>";
 }
 
