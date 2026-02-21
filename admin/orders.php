@@ -7,6 +7,8 @@ $pageSubtitle = 'View and manage all orders';
 $activePage = 'orders';
 
 $status_filter = $_GET['status'] ?? '';
+$date_filter = $_GET['date'] ?? date('Y-m-d'); // Default to today
+
 $sql = "SELECT o.*, t.table_number,
                b.payment_status, b.bill_number
         FROM orders o
@@ -14,6 +16,13 @@ $sql = "SELECT o.*, t.table_number,
         LEFT JOIN bills b ON b.order_id = o.id
         WHERE 1=1";
 $params = [];
+
+if ($date_filter) {
+    if ($date_filter !== 'all') {
+        $sql .= " AND DATE(o.created_at)=?"; 
+        $params[] = $date_filter;
+    }
+}
 if ($status_filter) { $sql .= " AND o.status=?"; $params[] = $status_filter; }
 $sql .= " ORDER BY o.created_at DESC LIMIT 100";
 $orders = db()->fetchAll($sql, $params);
@@ -22,11 +31,17 @@ include __DIR__ . '/partials/header.php';
 ?>
 
 <!-- Status Filters -->
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
     <?php foreach([''=>'All','placed'=>'Placed','preparing'=>'Preparing','served'=>'Served','cancelled'=>'Cancelled'] as $k=>$v): ?>
-    <a href="orders.php<?= $k?'?status='.$k:'' ?>" class="topbar-btn <?= $status_filter===$k?'btn-primary':'btn-secondary' ?> btn-sm"><?= $v ?></a>
+    <a href="orders.php?status=<?= $k ?>&date=<?= $date_filter ?>" class="topbar-btn <?= $status_filter===$k?'btn-primary':'btn-secondary' ?> btn-sm"><?= $v ?></a>
     <?php endforeach; ?>
-    <span style="margin-left:auto;font-size:12px;color:var(--text-muted)"><?= count($orders) ?> orders</span>
+    
+    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px;color:var(--text-muted)">Date:</span>
+        <input type="date" id="orderDateFilter" class="form-control" style="padding:4px 8px;font-size:12px;width:130px;height:auto" value="<?= $date_filter==='all'?'':$date_filter ?>" onchange="filterOrdersByDate(this.value)">
+        <button class="topbar-btn btn-secondary btn-sm" onclick="filterOrdersByDate('all')">All Time</button>
+        <span style="margin-left:8px;font-size:12px;color:var(--text-muted)"><?= count($orders) ?> orders</span>
+    </div>
 </div>
 
 <div class="card">
@@ -85,7 +100,16 @@ include __DIR__ . '/partials/header.php';
 </div>
 
 <script>
-const BASE_URL = '<?= BASE_URL ?>';
+function filterOrdersByDate(dateVal) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (dateVal === 'all') {
+        urlParams.set('date', 'all');
+    } else {
+        urlParams.set('date', dateVal);
+    }
+    window.location.href = 'orders.php?' + urlParams.toString();
+}
+
 function updateOrderStatus(orderId, status) {
     fetch(BASE_URL + '/api/update_order_status.php', {
         method: 'POST',

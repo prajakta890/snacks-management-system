@@ -138,7 +138,6 @@ include __DIR__ . '/partials/header.php';
 </div>
 
 <script>
-const BASE_URL = '<?= BASE_URL ?>';
 let editMode = false;
 
 function openAddItemModal() {

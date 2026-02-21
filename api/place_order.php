@@ -57,7 +57,7 @@ try {
                 db()->execute("UPDATE order_items SET quantity=quantity+?, subtotal=subtotal+? WHERE id=?", [$oi['qty'], $oi['total'], $existing['id']]);
             } else {
                 db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal,status) VALUES(?,?,?,?,?,?,?)",
-                    [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'served']);
+                    [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'pending']);
             }
         }
         // Recalculate order total ignoring cancelled items
@@ -71,11 +71,11 @@ try {
         // Create new order
         $orderNumber = generateOrderNumber();
         $orderId = db()->insert("INSERT INTO orders (table_id,order_number,customer_name,customer_mobile,status,subtotal,tax,total,notes) VALUES(?,?,?,?,?,?,?,?,?)",
-            [$tableId, $orderNumber, $customerName, $customerMobile, 'served', $subtotal, $taxAmount, $totalAmount, $notes]);
+            [$tableId, $orderNumber, $customerName, $customerMobile, 'placed', $subtotal, $taxAmount, $totalAmount, $notes]);
 
         foreach ($orderItems as $oi) {
             db()->insert("INSERT INTO order_items (order_id,menu_item_id,item_name,item_price,quantity,subtotal,status) VALUES(?,?,?,?,?,?,?)",
-                [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'served']);
+                [$orderId, $oi['menu_item_id'], $oi['name'], $oi['price'], $oi['qty'], $oi['total'], 'pending']);
         }
 
         // Create bill

@@ -31,7 +31,7 @@ CREATE TABLE `users` (
 
 -- Default admin: username=admin, password=admin123
 INSERT INTO `users` (`username`, `email`, `password`, `full_name`, `role`) VALUES
-('admin', 'admin@snacsshop.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin');
+('admin', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin');
 
 -- ============================================================
 -- Table: tables (Hotel Tables)
@@ -138,7 +138,7 @@ CREATE TABLE `orders` (
   `order_number` VARCHAR(50) NOT NULL,
   `customer_name` VARCHAR(200) DEFAULT NULL,
   `customer_mobile` VARCHAR(15) DEFAULT NULL,
-  `status` ENUM('placed','preparing','served','cancelled') NOT NULL DEFAULT 'served',
+  `status` ENUM('placed','preparing','served','cancelled') NOT NULL DEFAULT 'placed',
   `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `tax` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `discount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -163,7 +163,7 @@ CREATE TABLE `order_items` (
   `item_price` DECIMAL(10,2) NOT NULL,
   `quantity` INT(11) NOT NULL DEFAULT 1,
   `subtotal` DECIMAL(10,2) NOT NULL,
-  `status` ENUM('pending','preparing','served','cancelled') NOT NULL DEFAULT 'served',
+  `status` ENUM('pending','preparing','served','cancelled') NOT NULL DEFAULT 'pending',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `order_id` (`order_id`),
