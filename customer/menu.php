@@ -46,8 +46,9 @@ foreach ($menuItems as $item) {
             <small><?= APP_TAGLINE ?></small>
         </div>
     </div>
-    <div class="table-badge">
+    <div class="table-badge" onclick="openTableDetails()" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
         <i class="fa fa-border-all"></i> Table <?= htmlspecialchars($table['table_number']) ?>
+        <i class="fa fa-chevron-down" style="font-size:10px; opacity:0.7"></i>
     </div>
 </header>
 
@@ -86,7 +87,7 @@ foreach ($menuItems as $item) {
                     <div class="card-footer">
                         <div class="price">₹<?= number_format($item['price'],2) ?></div>
                         <div id="cart-ctrl-<?= $item['id'] ?>">
-                            <button class="add-btn" onclick="addToCart(<?= $item['id'] ?>, '<?= addslashes($item['name']) ?>', <?= $item['price'] ?>, <?= $item['is_veg'] ?>)">
+                            <button class="add-btn" onclick="addToCart('<?= $item['id'] ?>')">
                                 <i class="fa fa-plus"></i> Add
                             </button>
                         </div>
@@ -138,20 +139,38 @@ foreach ($menuItems as $item) {
     </div>
 </div>
 
+<!-- Table Details Modal -->
+<div class="cart-panel" id="tableDetailsPanel">
+    <div class="cart-header">
+        <h2>🧾 Table <?= htmlspecialchars($table['table_number']) ?> Details</h2>
+        <button class="btn-close" onclick="closeTableDetails()"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="cart-items" id="tableDetailsBody" style="padding:20px;">
+        <div style="text-align:center;color:var(--text-muted)"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Loading...</div>
+    </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="<?= BASE_URL ?>/assets/js/toast.js"></script>
 <script>
 const TABLE_ID = <?= $tableId ?>;
 const TAX_RATE = <?= TAX_PERCENT ?>;
-const BASE_URL = '<?= BASE_URL ?>';
+var BASE_URL = '<?= BASE_URL ?>';
 let cart = JSON.parse(sessionStorage.getItem('cart_' + TABLE_ID) || '{}');
 
 // ---- CART FUNCTIONS ----
-function addToCart(id, name, price, isVeg) {
+function addToCart(id) {
+    let name;
     if (cart[id]) {
         cart[id].qty++;
+        name = cart[id].name;
     } else {
+        const card = document.getElementById('menu-item-' + id);
+        if (!card) return;
+        name = card.querySelector('.card-title').textContent.trim();
+        const price = parseFloat(card.querySelector('.price').textContent.replace('₹','').replace(/,/g,''));
+        const isVeg = card.querySelector('.veg-indicator').classList.contains('veg') ? 1 : 0;
         cart[id] = { id, name, price, qty: 1, isVeg };
     }
     saveCart();
@@ -182,17 +201,10 @@ function renderCartControls() {
                 <div class="qty-controls">
                     <button class="qty-btn" onclick="removeFromCart('${id}')">−</button>
                     <span class="qty-display">${cart[id].qty}</span>
-                    <button class="qty-btn" onclick="addToCart('${id}', ${JSON.stringify(cart[id].name)}, ${cart[id].price}, ${cart[id].isVeg})">+</button>
+                    <button class="qty-btn" onclick="addToCart('${id}')">+</button>
                 </div>`;
         } else {
-            // Find the item from page
-            const card = document.getElementById('menu-item-' + id);
-            if (card) {
-                const title = card.querySelector('.card-title')?.textContent;
-                const priceEl = card.querySelector('.price')?.textContent.replace('₹','').replace(',','');
-                const isVeg = card.querySelector('.veg-indicator')?.classList.contains('veg') ? 1 : 0;
-                el.innerHTML = `<button class="add-btn" onclick="addToCart('${id}', ${JSON.stringify(title)}, ${priceEl}, ${isVeg})"><i class="fa fa-plus"></i> Add</button>`;
-            }
+            el.innerHTML = `<button class="add-btn" onclick="addToCart('${id}')"><i class="fa fa-plus"></i> Add</button>`;
         }
     });
 }
@@ -230,7 +242,7 @@ function renderCart() {
             <div class="item-controls">
                 <button class="qty-btn" onclick="removeFromCart('${item.id}')">−</button>
                 <span class="qty-display">${item.qty}</span>
-                <button class="qty-btn" onclick="addToCart('${item.id}', ${JSON.stringify(item.name)}, ${item.price}, ${item.isVeg})">+</button>
+                <button class="qty-btn" onclick="addToCart('${item.id}')">+</button>
             </div>
         </div>`;
     });
@@ -314,6 +326,35 @@ function placeOrder() {
             btn.innerHTML = '<i class="fa fa-paper-plane"></i> Place Order';
         });
 }
+
+// ---- TABLE DETAILS ----
+function openTableDetails() {
+    document.getElementById('tableDetailsPanel').classList.add('open');
+    document.getElementById('cartOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    fetch(BASE_URL + '/api/get_customer_bill.php?table_id=' + TABLE_ID)
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('tableDetailsBody').innerHTML = d.html || 'Failed to load details.';
+        })
+        .catch(() => {
+            document.getElementById('tableDetailsBody').innerHTML = 'Network Error.';
+        });
+}
+
+function closeTableDetails() {
+    document.getElementById('tableDetailsPanel').classList.remove('open');
+    document.getElementById('cartOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Override closeCart to also close table details
+const originalCloseCart = closeCart;
+closeCart = function() {
+    originalCloseCart();
+    closeTableDetails();
+};
 
 // Init
 renderCartControls();

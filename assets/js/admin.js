@@ -2,7 +2,7 @@
 // Admin JS — SNACS SHOP
 // ============================================================
 
-const BASE_URL = (typeof BASE_URL !== 'undefined') ? BASE_URL : '';
+var BASE_URL = (typeof BASE_URL !== 'undefined') ? BASE_URL : '';
 
 // Global bill modal save function (called from get_table_bill.php HTML)
 function saveBillFromModal(billNumber) {

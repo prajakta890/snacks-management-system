@@ -66,7 +66,7 @@ include __DIR__ . '/partials/header.php';
                                 <div class="item-footer" style="margin-top: 12px;">
                                     <div class="item-price">₹<?= number_format($item['price'],2) ?></div>
                                     <div id="cart-ctrl-<?= $item['id'] ?>">
-                                        <button class="topbar-btn btn-primary btn-sm" onclick="addToCart(<?= $item['id'] ?>, '<?= addslashes($item['name']) ?>', <?= $item['price'] ?>, <?= $item['is_veg'] ?>)">
+                                        <button class="topbar-btn btn-primary btn-sm" onclick="addToCart('<?= $item['id'] ?>')">
                                             <i class="fa fa-plus"></i> Add
                                         </button>
                                     </div>
@@ -163,9 +163,17 @@ const TABLE_ID = <?= $tableId ?>;
 const TAX_RATE = <?= TAX_PERCENT ?>;
 let cart = {}; // Admin POS shouldn't strictly require session storage across refreshes, but we can
 
-function addToCart(id, name, price, isVeg) {
-    if (cart[id]) cart[id].qty++;
-    else cart[id] = { id, name, price, qty: 1, isVeg };
+function addToCart(id) {
+    if (cart[id]) {
+        cart[id].qty++;
+    } else {
+        const card = document.getElementById('menu-item-' + id);
+        if (!card) return;
+        const name = card.querySelector('.item-name').textContent.trim();
+        const price = parseFloat(card.querySelector('.item-price').textContent.replace('₹','').replace(/,/g,''));
+        const isVeg = card.querySelector('.veg-dot').classList.contains('veg') ? 1 : 0;
+        cart[id] = { id, name, price, qty: 1, isVeg };
+    }
     renderCartControls();
     renderCart();
 }
@@ -186,16 +194,10 @@ function renderCartControls() {
                 <div class="qty-controls">
                     <button class="qty-btn" onclick="removeFromCart('${id}')">−</button>
                     <span class="qty-display">${cart[id].qty}</span>
-                    <button class="qty-btn" onclick="addToCart('${id}', null, null, null)">+</button>
+                    <button class="qty-btn" onclick="addToCart('${id}')">+</button>
                 </div>`;
         } else {
-            const card = document.getElementById('menu-item-' + id);
-            if (card) {
-                const title = card.querySelector('.item-name')?.textContent;
-                const priceEl = card.querySelector('.item-price')?.textContent.replace('₹','').replace(',','');
-                const isVeg = card.querySelector('.veg-dot')?.classList.contains('veg') ? 1 : 0;
-                el.innerHTML = `<button class="topbar-btn btn-primary btn-sm" onclick="addToCart('${id}', ${JSON.stringify(title)}, ${priceEl}, ${isVeg})"><i class="fa fa-plus"></i> Add</button>`;
-            }
+            el.innerHTML = `<button class="topbar-btn btn-primary btn-sm" onclick="addToCart('${id}')"><i class="fa fa-plus"></i> Add</button>`;
         }
     });
 }
