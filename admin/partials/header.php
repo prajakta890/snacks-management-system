@@ -55,10 +55,10 @@ $pendingOrders = db()->fetchOne("SELECT COUNT(*) as cnt FROM orders WHERE status
         <a href="<?= BASE_URL ?>/admin/reports.php" class="nav-link <?= $activePage==='reports'?'active':'' ?>">
             <i class="fa fa-chart-line"></i> Reports
         </a>
-        <div class="nav-section-title">Customer</div>
+        <!--div class="nav-section-title">Customer</div>
         <a href="<?= BASE_URL ?>/customer/" class="nav-link" target="_blank">
             <i class="fa fa-mobile-screen"></i> Customer View <i class="fa fa-arrow-up-right-from-square" style="font-size:10px;margin-left:auto;color:var(--text-muted)"></i>
-        </a>
+        </a-->
     </nav>
     <div class="sidebar-footer">
         <?php $admin = adminInfo(); ?>
