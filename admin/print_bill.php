@@ -11,6 +11,39 @@ $bill = db()->fetchOne(
 if (!$bill) { die('Bill not found'); }
 
 $items = db()->fetchAll("SELECT * FROM order_items WHERE order_id=?", [$bill['order_id']]);
+
+// Build WhatsApp Message Text
+$waMessage = "*" . APP_NAME . "*\n";
+if (defined('APP_TAGLINE') && APP_TAGLINE) {
+    $waMessage .= "_" . APP_TAGLINE . "_\n";
+}
+$waMessage .= "--------------------------------\n";
+$waMessage .= "Bill No: " . $bill['bill_number'] . "\n";
+$waMessage .= "Date: " . date('d M Y, h:i A', strtotime($bill['created_at'])) . "\n";
+if ($bill['customer_name']) {
+    $waMessage .= "Customer: " . $bill['customer_name'] . "\n";
+}
+$waMessage .= "--------------------------------\n";
+$waMessage .= "Items:\n";
+foreach ($items as $item) {
+    $waMessage .= "- " . $item['item_name'] . " x" . $item['quantity'] . "  = Rs " . number_format($item['subtotal'], 2) . "\n";
+}
+$waMessage .= "--------------------------------\n";
+$waMessage .= "Subtotal: Rs " . number_format($bill['subtotal'], 2) . "\n";
+if ($bill['tax_amount'] > 0) {
+    $waMessage .= "GST (" . $bill['tax_percent'] . "%): Rs " . number_format($bill['tax_amount'], 2) . "\n";
+}
+if ($bill['discount'] > 0) {
+    $waMessage .= "Discount: -Rs " . number_format($bill['discount'], 2) . "\n";
+}
+$waMessage .= "*TOTAL: Rs " . number_format($bill['total_amount'], 2) . "*\n";
+$waMessage .= "Payment: " . strtoupper($bill['payment_method'] ?? 'CASH') . "\n";
+$waMessage .= "--------------------------------\n";
+$waMessage .= "Thank you! Visit again 🙏";
+
+// Encode for URL
+$waMessageEncoded = urlencode($waMessage);
+$waCustomerMobile = $bill['customer_mobile'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,7 +56,8 @@ $items = db()->fetchAll("SELECT * FROM order_items WHERE order_id=?", [$bill['or
 </head>
 <body>
 <div class="no-print" style="text-align:center;padding:20px;background:#0d0d1a;border-bottom:1px solid rgba(255,255,255,0.1)">
-    <button onclick="window.print()" style="background:linear-gradient(135deg,#6c5ce7,#fd79a8);border:none;color:#fff;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">🖨 Print Invoice</button>
+    <button onclick="window.print()" style="background:linear-gradient(135deg,#6c5ce7,#fd79a8);border:none;color:#fff;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-right:10px">🖨 Print Invoice</button>
+    <button onclick="sendWhatsApp()" style="background:#25D366;border:none;color:#fff;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">💬 WhatsApp</button>
     <a href="javascript:history.back()" style="color:rgba(255,255,255,0.5);margin-left:16px;font-size:13px;text-decoration:none">← Back</a>
 </div>
 
@@ -107,9 +141,29 @@ $items = db()->fetchAll("SELECT * FROM order_items WHERE order_id=?", [$bill['or
 </div>
 
 <script>
-// Auto-print when opened from print button
+function sendWhatsApp() {
+    let mobile = "<?= $waCustomerMobile ?>";
+    const message = "<?= $waMessageEncoded ?>";
+    
+    if (!mobile || mobile.length < 10) {
+        mobile = prompt("Enter WhatsApp Number (with country code, e.g. 919876543210):", "91");
+    } else {
+        // Basic formatting for Indian numbers if only 10 digits
+        if (mobile.length === 10) {
+            mobile = "91" + mobile;
+        }
+    }
+    
+    if (mobile && mobile.length >= 10) {
+        const url = `https://wa.me/${mobile}?text=${message}`;
+        window.open(url, '_blank');
+    }
+}
+
+// Auto-actions when opened with hash
 window.onload = function() {
     if (window.location.hash === '#autoprint') window.print();
+    if (window.location.hash === '#whatsapp') sendWhatsApp();
 };
 </script>
 </body>
