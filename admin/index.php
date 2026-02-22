@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 requireAdminLogin();
 
 $pageTitle = 'Dashboard';
-$pageSubtitle = 'Welcome back, ' . (adminInfo()['full_name'] ?? 'Admin');
+$pageSubtitle = '<span id="liveIndicator" style="display:inline-flex;align-items:center;margin-right:8px;font-size:10px;text-transform:uppercase;color:#2ecc71;background:rgba(46,204,113,0.1);padding:2px 8px;border-radius:12px;font-weight:700;"><span style="width:6px;height:6px;background:#2ecc71;border-radius:50%;margin-right:6px;box-shadow:0 0 8px #2ecc71;"></span>Live</span> Welcome back, ' . (adminInfo()['full_name'] ?? 'Admin');
 $activePage = 'dashboard';
 
 // Stats
@@ -50,35 +50,35 @@ include __DIR__ . '/partials/header.php';
     <div class="stat-card">
         <div class="stat-icon purple"><i class="fa fa-border-all"></i></div>
         <div class="stat-info">
-            <h3><?= $totalTables ?></h3>
+            <h3 id="stat_totalTables"><?= $totalTables ?></h3>
             <p>Total Tables</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon green"><i class="fa fa-circle-check"></i></div>
         <div class="stat-info">
-            <h3><?= $activeTables ?></h3>
+            <h3 id="stat_activeTables"><?= $activeTables ?></h3>
             <p>Occupied Tables</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon orange"><i class="fa fa-clock"></i></div>
         <div class="stat-info">
-            <h3><?= $pendingBills ?></h3>
+            <h3 id="stat_pendingBills"><?= $pendingBills ?></h3>
             <p>Pending Bills</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon yellow"><i class="fa fa-indian-rupee-sign"></i></div>
         <div class="stat-info">
-            <h3><?= formatCurrency($todayRevenue) ?></h3>
+            <h3 id="stat_todayRevenue"><?= formatCurrency($todayRevenue) ?></h3>
             <p>Today's Revenue</p>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon pink"><i class="fa fa-receipt"></i></div>
         <div class="stat-info">
-            <h3><?= $totalOrders ?></h3>
+            <h3 id="stat_totalOrders"><?= $totalOrders ?></h3>
             <p>Today's Orders</p>
         </div>
     </div>
@@ -128,7 +128,7 @@ include __DIR__ . '/partials/header.php';
                 <h2><i class="fa fa-border-all" style="color:var(--danger);margin-right:8px"></i>Active Tables</h2>
                 <a href="<?= BASE_URL ?>/admin/tables.php" class="topbar-btn btn-secondary btn-sm">Manage</a>
             </div>
-            <div style="padding:12px">
+            <div id="activeTablesContainer" style="padding:12px">
                 <?php if (empty($activeTblData)): ?>
                 <div class="empty-state" style="padding:30px">
                     <div class="empty-icon">🪑</div>
@@ -152,6 +152,83 @@ include __DIR__ . '/partials/header.php';
         </div>
     </div>
 </div>
+
+<script>
+function refreshDashboard() {
+    const indicator = document.getElementById('liveIndicator');
+    if (indicator) indicator.style.opacity = '0.5';
+
+    fetch(BASE_URL + '/api/get_dashboard_data.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const d = data.data;
+                // Update Stats
+                document.getElementById('stat_totalTables').innerText = d.stats.totalTables;
+                document.getElementById('stat_activeTables').innerText = d.stats.activeTables;
+                document.getElementById('stat_pendingBills').innerText = d.stats.pendingBills;
+                document.getElementById('stat_todayRevenue').innerText = d.stats.todayRevenueFormatted;
+                document.getElementById('stat_totalOrders').innerText = d.stats.totalOrders;
+
+                // Update Sidebar Badge
+                const sidebarBadge = document.getElementById('sidebar_pending_orders_badge');
+                if (sidebarBadge) {
+                    sidebarBadge.innerText = d.stats.pendingOrdersCount;
+                    sidebarBadge.style.display = d.stats.pendingOrdersCount > 0 ? '' : 'none';
+                }
+
+                // Update Recent Orders (Simplistic replacement for now)
+                if (d.recentOrders.length > 0) {
+                    let ordersHtml = '';
+                    d.recentOrders.forEach(o => {
+                        ordersHtml += `
+                        <tr>
+                            <td><strong>${o.order_number}</strong></td>
+                            <td><span class="badge badge-placed">${o.table_number}</span></td>
+                            <td>${o.item_count} items</td>
+                            <td><strong>${o.total_formatted}</strong></td>
+                            <td><span class="badge badge-${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></td>
+                            <td style="color:var(--text-muted);font-size:12px">${o.time}</td>
+                        </tr>`;
+                    });
+                    const tableBody = document.querySelector('.data-table tbody');
+                    if (tableBody) tableBody.innerHTML = ordersHtml;
+                }
+
+                // Update Active Tables
+                if (d.activeTables.length > 0) {
+                    let tablesHtml = '';
+                    d.activeTables.forEach(t => {
+                        tablesHtml += `
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 8px;border-bottom:1px solid var(--border);">
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div style="width:36px;height:36px;background:rgba(225,112,85,0.15);border:1px solid var(--danger);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--danger)">${t.table_number}</div>
+                                <div>
+                                    <div style="font-size:13px;font-weight:600">${t.bill_number}</div>
+                                    <span class="badge badge-${t.status.toLowerCase()}">${t.status.charAt(0).toUpperCase() + t.status.slice(1)}</span>
+                                </div>
+                            </div>
+                            <strong style="font-size:14px">${t.total_formatted}</strong>
+                        </div>`;
+                    });
+                    document.getElementById('activeTablesContainer').innerHTML = tablesHtml;
+                } else {
+                    document.getElementById('activeTablesContainer').innerHTML = `
+                        <div class="empty-state" style="padding:30px">
+                            <div class="empty-icon">🪑</div>
+                            <h3>All tables free</h3>
+                        </div>`;
+                }
+            }
+        })
+        .finally(() => {
+            if (indicator) indicator.style.opacity = '1';
+        });
+}
+
+// Auto-refresh every 10 seconds
+setInterval(refreshDashboard, 10000);
+</script>
 
 <!-- Quick Actions -->
 <div style="margin-top:20px">

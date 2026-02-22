@@ -41,9 +41,7 @@ $pendingOrders = db()->fetchOne("SELECT COUNT(*) as cnt FROM orders WHERE status
         </a>
         <a href="<?= BASE_URL ?>/admin/orders.php" class="nav-link <?= $activePage==='orders'?'active':'' ?>">
             <i class="fa fa-receipt"></i> Orders
-            <?php if ($pendingOrders > 0): ?>
-            <span class="badge"><?= $pendingOrders ?></span>
-            <?php endif; ?>
+            <span class="badge" id="sidebar_pending_orders_badge" style="<?= ($pendingOrders > 0) ? '' : 'display:none;' ?>"><?= $pendingOrders ?></span>
         </a>
         <a href="<?= BASE_URL ?>/admin/bills.php" class="nav-link <?= $activePage==='bills'?'active':'' ?>">
             <i class="fa fa-file-invoice"></i> Bills
