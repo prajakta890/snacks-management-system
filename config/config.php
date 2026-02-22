@@ -4,7 +4,7 @@
 // ============================================================
 
 define('APP_NAME', 'कन्हैया स्नॅक्स');
-define('APP_TAGLINE', 'कन्हैया स्नॅक्स');
+define('APP_TAGLINE', 'अस्सल महाराष्ट्रीयन चव');
 define('APP_VERSION', '1.0.0');
 define('BASE_URL', 'http://localhost/snacks-management-system');
 define('UPLOAD_PATH', __DIR__ . '/../uploads/');

@@ -53,11 +53,13 @@ $waCustomerMobile = $bill['customer_mobile'] ?? '';
     <title>Invoice — <?= $billNumber ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/invoice.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="no-print" style="text-align:center;padding:20px;background:#0d0d1a;border-bottom:1px solid rgba(255,255,255,0.1)">
-    <button onclick="window.print()" style="background:linear-gradient(135deg,#6c5ce7,#fd79a8);border:none;color:#fff;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-right:10px">🖨 Print Invoice</button>
-    <button onclick="sendWhatsApp()" style="background:#25D366;border:none;color:#fff;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">💬 WhatsApp</button>
+    <button onclick="window.print()" style="background:linear-gradient(135deg,#6c5ce7,#fd79a8);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-right:10px">🖨 Print Invoice</button>
+    <button id="wa_text_btn" onclick="sendWhatsAppText()" style="background:#25D366;border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-right:10px">💬 Text</button>
+    <button id="wa_pdf_btn" onclick="sendWhatsAppPDF()" style="background:#075e54;border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">📄 PDF</button>
     <a href="javascript:history.back()" style="color:rgba(255,255,255,0.5);margin-left:16px;font-size:13px;text-decoration:none">← Back</a>
 </div>
 
@@ -141,17 +143,14 @@ $waCustomerMobile = $bill['customer_mobile'] ?? '';
 </div>
 
 <script>
-function sendWhatsApp() {
+function sendWhatsAppText() {
     let mobile = "<?= $waCustomerMobile ?>";
     const message = "<?= $waMessageEncoded ?>";
     
     if (!mobile || mobile.length < 10) {
         mobile = prompt("Enter WhatsApp Number (with country code, e.g. 919876543210):", "91");
-    } else {
-        // Basic formatting for Indian numbers if only 10 digits
-        if (mobile.length === 10) {
-            mobile = "91" + mobile;
-        }
+    } else if (mobile.length === 10) {
+        mobile = "91" + mobile;
     }
     
     if (mobile && mobile.length >= 10) {
@@ -160,10 +159,74 @@ function sendWhatsApp() {
     }
 }
 
+async function sendWhatsAppPDF() {
+    let mobile = "<?= $waCustomerMobile ?>";
+    const billNumber = "<?= $bill['bill_number'] ?>";
+    const btn = document.getElementById('wa_pdf_btn');
+    const originalText = btn.innerHTML;
+    
+    if (!mobile || mobile.length < 10) {
+        mobile = prompt("Enter WhatsApp Number (with country code, e.g. 919876543210):", "91");
+    } else if (mobile.length === 10) {
+        mobile = "91" + mobile;
+    }
+    
+    // Even if no mobile, we proceed with generate and download/share.
+    btn.disabled = true;
+    btn.innerHTML = '⌛ Generating...';
+
+    const element = document.querySelector('.invoice-wrapper');
+    const opt = {
+        margin: 5,
+        filename: `bill_${billNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        const blob = await html2pdf().set(opt).from(element).outputPdf('blob');
+        const file = new File([blob], `bill_${billNumber}.pdf`, { type: 'application/pdf' });
+
+        // Share API (Mobile/Direct)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: 'Bill - ' + billNumber,
+                text: 'Invoice from ' + "<?= APP_NAME ?>"
+            });
+        } else {
+            // Fallback for Desktop: Download + Open WhatsApp
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `bill_${billNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            if (mobile && mobile.length >= 10) {
+                const message = encodeURIComponent(`*Bill from ${"<?= APP_NAME ?>" }*\n\nYour PDF bill has been downloaded. Please attach it to this chat.`);
+                window.open(`https://wa.me/${mobile}?text=${message}`, '_blank');
+            } else {
+                alert('PDF downloaded! Please share it with the customer.');
+            }
+        }
+    } catch (error) {
+        console.error('Error sharing PDF:', error);
+        alert('Failed to share PDF. Please try again.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
 // Auto-actions when opened with hash
 window.onload = function() {
     if (window.location.hash === '#autoprint') window.print();
-    if (window.location.hash === '#whatsapp') sendWhatsApp();
+    if (window.location.hash === '#whatsapp-text') sendWhatsAppText();
+    if (window.location.hash === '#whatsapp-pdf') sendWhatsAppPDF();
 };
 </script>
 </body>

@@ -73,7 +73,8 @@ include __DIR__ . '/partials/header.php';
         <h2>Bill: <?= $viewBill['bill_number'] ?></h2>
         <div style="display:flex;gap:8px">
             <button class="topbar-btn btn-primary btn-sm" onclick="window.open('<?= BASE_URL ?>/admin/print_bill.php?bill=<?= $viewBill['bill_number'] ?>', '_blank')"><i class="fa fa-print"></i> Print</button>
-            <button class="topbar-btn btn-sm" style="background:#25D366;color:#fff;border:none" onclick="window.open('<?= BASE_URL ?>/admin/print_bill.php?bill=<?= $viewBill['bill_number'] ?>#whatsapp', '_blank')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+            <button class="topbar-btn btn-sm" style="background:#25D366;color:#fff;border:none" onclick="window.open('<?= BASE_URL ?>/admin/print_bill.php?bill=<?= $viewBill['bill_number'] ?>#whatsapp-text', '_blank')"><i class="fa fa-comment"></i> Text</button>
+            <button class="topbar-btn btn-sm" style="background:#075e54;color:#fff;border:none" onclick="window.open('<?= BASE_URL ?>/admin/print_bill.php?bill=<?= $viewBill['bill_number'] ?>#whatsapp-pdf', '_blank')"><i class="fa fa-file-pdf"></i> PDF</button>
             <a href="bills.php" class="topbar-btn btn-secondary btn-sm">Back</a>
         </div>
     </div>
@@ -191,7 +192,8 @@ include __DIR__ . '/partials/header.php';
             <td style="display:flex;gap:5px">
                 <a href="bills.php?bill=<?= $b['bill_number'] ?>" class="topbar-btn btn-secondary btn-sm" title="View"><i class="fa fa-eye"></i></a>
                 <a href="print_bill.php?bill=<?= $b['bill_number'] ?>" target="_blank" class="topbar-btn btn-secondary btn-sm" title="Print"><i class="fa fa-print"></i></a>
-                <a href="print_bill.php?bill=<?= $b['bill_number'] ?>#whatsapp" target="_blank" class="topbar-btn btn-sm" style="background:#25D366;color:#fff;border:none" title="Send WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                <a href="print_bill.php?bill=<?= $b['bill_number'] ?>#whatsapp-text" target="_blank" class="topbar-btn btn-sm" style="background:#25D366;color:#fff;border:none" title="Send Text"><i class="fa fa-comment"></i></a>
+                <a href="print_bill.php?bill=<?= $b['bill_number'] ?>#whatsapp-pdf" target="_blank" class="topbar-btn btn-sm" style="background:#075e54;color:#fff;border:none" title="Share PDF"><i class="fa fa-file-pdf"></i></a>
             </td>
         </tr>
         <?php endforeach; ?>
